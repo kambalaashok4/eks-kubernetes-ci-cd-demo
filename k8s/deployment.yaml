@@ -1,0 +1,70 @@
+--- 
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: profile-app
+  namespace: profile
+spec:
+
+  selector:
+    matchLabels:
+      app: profile-app
+  template:
+    metadata:
+      labels:
+        app: profile-app
+    spec:
+      containers:
+        - name: profile-app
+          image: 870388460414.dkr.ecr.us-east-1.amazonaws.com/eks/profile:sha-d375935
+          ports:
+            - containerPort: 3000
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "112Mi"
+            limits:
+              cpu: "100m"
+              memory: "224Mi"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: profile-service
+spec:
+  selector:
+    app: profile-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 3000
+  type: LoadBalancer
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: profile-hpa
+  namespace: profile
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: profile-app
+  minReplicas: 2
+  maxReplicas: 15
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 30
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 30 
+        

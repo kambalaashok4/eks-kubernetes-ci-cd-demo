@@ -1,0 +1,116 @@
+name: CI/CD
+
+on:
+  push:
+    paths-ignore:
+      - 'README.md'
+      # - '.github/workflows/**'
+      - 'k8s/**'
+    branches: [main]
+permissions:
+  contents: read
+  id-token: write
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: eks/profile
+  IMAGE_NAME: latest
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tests
+        run: |
+          echo "Running tests..."
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: debug jwt
+        run: |
+          TOKEN=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -r '.value')
+          echo $TOKEN | cut -d. -f2 | base64 -d 2>/dev/null | jq .
+      # ✅ Configure AWS credentials (OIDC recommended)
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::870388460414:role/github-actions-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ✅ Login to ECR
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ✅ Extract metadata
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}
+          tags: |
+            type=sha,format=short
+
+      # ✅ Build & Push to ECR
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+  # image-scan-trivy:
+  #   needs: build-and-push
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: debug jwt
+  #       run: |
+  #         TOKEN=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+  #           "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -r '.value')
+  #         echo $TOKEN | cut -d. -f2 | base64 -d 2>/dev/null | jq .
+  #     # ✅ Configure AWS credentials (OIDC recommended)
+  #     - name: Configure AWS credentials
+  #       uses: aws-actions/configure-aws-credentials@v4
+  #       with:
+  #         role-to-assume: arn:aws:iam::870388460414:role/github-actions-deploy
+  #         aws-region: ${{ env.AWS_REGION }}
+  #     - name: Scan image with Trivy
+  #       uses: aquasecurity/trivy-action@master
+  #       with:
+  #         image-ref: 870388460414.dkr.ecr.us-east-1.amazonaws.com/eks/profile:${{ needs.build-and-push.outputs.image_tag }}
+  #         format: 'table'
+  #         exit-code: '1'
+  #         severity: 'CRITICAL'
+  #         output: 'trivy-report.txt'
+  update-manifest:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout GitOps repo
+        uses: actions/checkout@v4
+        with:
+          #repository: kambalaashok4/TetrisApp-Jenkins-EKS-ArgoCD-TF
+          repository: kambalaashok4/eks-kubernetes-ci-cd-demo
+          token: ${{ secrets.GITOPS_PAT }}
+
+      - name: Update image tag
+        run: |
+          IMAGE_TAG="${{ needs.build-and-push.outputs.image_tag }}"
+          ECR_URI="870388460414.dkr.ecr.us-east-1.amazonaws.com/eks/profile"
+          sed -i "s|image: .*|image: ${ECR_URI}:${IMAGE_TAG}|g " k8s/deployment.yaml
+          cat k8s/deployment.yaml
+
+      - name: Commit and push
+        run: |
+          git config user.name "kambalaashok4"
+          git config user.email "kambalaashok4@gmail.com"
+          git add k8s/deployment.yaml
+          git commit -m "chore: update image tag to $IMAGE_TAG to manifests [skip ci]" || echo "No changes"
+          git push origin HEAD:main
