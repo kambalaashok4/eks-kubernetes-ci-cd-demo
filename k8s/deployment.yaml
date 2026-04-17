@@ -40,7 +40,7 @@ spec:
   - protocol: TCP
     port: 80
     targetPort: 8000
-  type: LoadBalancer
+  type: ClusterIP
 
 ---
 apiVersion: autoscaling/v2
