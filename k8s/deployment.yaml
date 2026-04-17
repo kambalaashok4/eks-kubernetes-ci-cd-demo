@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: profile-app
-          image: 870388460414.dkr.ecr.us-east-1.amazonaws.com/eks/profile:sha-d375935
+          image: 870388460414.dkr.ecr.us-east-1.amazonaws.com/eks/profile:sha-b43f663
           ports:
             - containerPort: 3000
           resources:
@@ -32,13 +32,14 @@ apiVersion: v1
 kind: Service
 metadata:
   name: profile-service
+  namespace: profile
 spec:
   selector:
     app: profile-app
   ports:
   - protocol: TCP
     port: 80
-    targetPort: 3000
+    targetPort: 8000
   type: LoadBalancer
 
 ---
