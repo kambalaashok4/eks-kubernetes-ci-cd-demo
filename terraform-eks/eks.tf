@@ -25,7 +25,7 @@ resource "aws_eks_cluster" "cluster" {
 resource "aws_launch_template" "eks_launch_template" {
   name_prefix   = "eks-launch-template-"
   instance_type = "t3.medium"
-  key_name      = "devops"
+  # key_name      = "devops"
   image_id = "ami-07a5013b607bc21bf"
 
   user_data = base64encode(<<-EOF
@@ -68,9 +68,9 @@ resource "aws_eks_node_group" "eks_node_group" {
   }
 
   scaling_config {
-    desired_size = 1
-    max_size     = 2
-    min_size     = 1
+    desired_size = 2
+    max_size     = 4
+    min_size     = 2
   }
 
   depends_on = [
