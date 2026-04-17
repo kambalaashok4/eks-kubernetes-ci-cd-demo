@@ -54,18 +54,18 @@ spec:
     kind: Deployment
     name: profile-app
   minReplicas: 2
-  maxReplicas: 15
+  maxReplicas: 4
   metrics:
   - type: Resource
     resource:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: 30
+        averageUtilization: 60
   - type: Resource
     resource:
       name: memory
       target:
         type: Utilization
-        averageUtilization: 30 
+        averageUtilization: 60 
         
