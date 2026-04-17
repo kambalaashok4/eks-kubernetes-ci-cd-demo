@@ -52,6 +52,6 @@ resource "aws_iam_role_policy_attachment" "AmazonEKS_CNI_Policy" {
 }
 
 resource "aws_iam_role_policy_attachment" "AWSLoadBalancerControllerIAMPolicy" {
-  policy_arn = "arn:aws:iam::865487342006:policy/AWSLoadBalancerControllerIAMPolicy"
+  policy_arn = "arn:aws:iam::870388460414:policy/AWSLoadBalancerControllerIAMPolicy"
   role       = aws_iam_role.NodeGroupRole.name
 }
