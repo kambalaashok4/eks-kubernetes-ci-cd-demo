@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: profile-app
-          image: 870388460414.dkr.ecr.us-east-1.amazonaws.com/eks/profile:sha-4bae4fa
+          image: 870388460414.dkr.ecr.us-east-1.amazonaws.com/eks/profile:sha-0776255
           ports:
             - containerPort: 3000
           resources:
