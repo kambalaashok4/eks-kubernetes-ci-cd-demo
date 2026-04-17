@@ -8,10 +8,11 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY ProfileApp .
+COPY ProfileApp /app
 
 EXPOSE 8000
 
 #CMD ["gunicorn", "MyProfile.wsgi:application", "--bind", "0.0.0.0:8000"]
-CMD ["gunicorn",  "app.wsgi:application",  "--bind", "0.0.0.0:8000",  "--workers", "2",  "--threads", "2",   "--timeout", "120",   "--log-level", "info" ]
+#CMD ["gunicorn",  "app.wsgi:application",  "--bind", "0.0.0.0:8000",  "--workers", "2",  "--threads", "2",   "--timeout", "120",   "--log-level", "info" ]
+CMD ["gunicorn", "wsgi:application", "--bind", "0.0.0.0:8000"]
 
